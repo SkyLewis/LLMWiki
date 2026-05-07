@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Verify build artifacts
+        run: |
+          test -f main.js || (echo "main.js missing" && exit 1)
+          test -f styles.css || (echo "styles.css missing" && exit 1)
+          test -f manifest.json || (echo "manifest.json missing" && exit 1)
+          node -e "const m = require('./manifest.json'); if (!m.id || !m.version) throw new Error('Invalid manifest')"
+          if grep -q 'require("obsidian")' main.js; then echo "ERROR: obsidian should be externalized" && exit 1; fi
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit

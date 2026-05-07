@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Verify build artifacts
+        run: |
+          test -f main.js || (echo "main.js missing" && exit 1)
+          test -f styles.css || (echo "styles.css missing" && exit 1)
+          test -f manifest.json || (echo "manifest.json missing" && exit 1)
+          node -e "const m = require('./manifest.json'); if (!m.id || !m.version) throw new Error('Invalid manifest')"
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          gh release create "$TAG" \
+            --title "LLM Wiki $TAG" \
+            main.js manifest.json styles.css

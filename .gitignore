@@ -1,0 +1,6 @@
+main.js
+node_modules/
+.omc/
+.claude/
+.eslintcache
+*.txt
