@@ -41,18 +41,18 @@ Every source you ingest and every question you ask makes the wiki richer. Cross-
 
 ### Obsidian Community Plugins (recommended)
 
-*Coming soon — pending submission to the community plugin list.*
+*Coming soon — pending submission to the Obsidian community plugin list.*
 
 ### BRAT (beta releases)
 
 1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Community Plugins
 2. Open BRAT Settings → "Add Beta Plugin"
-3. Enter the repository URL: `https://github.com/<owner>/LLMWiki`
+3. Enter the repository URL: `https://github.com/SkyLewis/LLMWiki`
 4. Enable the plugin in Obsidian settings
 
 ### Manual
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/<owner>/LLMWiki/releases/latest)
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/SkyLewis/LLMWiki/releases/latest)
 2. Create folder `.obsidian/plugins/llm-wiki/` in your vault
 3. Copy the three files into that folder
 4. Enable the plugin in Obsidian Settings → Community Plugins
