@@ -27,7 +27,13 @@ jobs:
           test -f styles.css || (echo "styles.css missing" && exit 1)
           test -f manifest.json || (echo "manifest.json missing" && exit 1)
           node -e "const m = require('./manifest.json'); if (!m.id || !m.version) throw new Error('Invalid manifest')"
-          if grep -q 'require("obsidian")' main.js; then echo "ERROR: obsidian should be externalized" && exit 1; fi
+          # Verify obsidian module is externalized: check that main.js does not contain
+          # the obsidian source code (which would appear if bundled, vs just a require() call)
+          OBSIDIAN_SOURCE_MARKER="ApiImplementation"
+          if grep -q "$OBSIDIAN_SOURCE_MARKER" main.js; then echo "ERROR: obsidian source appears to be bundled" && exit 1; fi
+          # sanity check: main.js should be a reasonable size (< 1MB) for a plugin bundle
+          SIZE=$(wc -c < main.js)
+          if [ "$SIZE" -gt 1048576 ]; then echo "ERROR: main.js is suspiciously large ($SIZE bytes)" && exit 1; fi
 
       - name: TypeScript type check
         run: npx tsc --noEmit
