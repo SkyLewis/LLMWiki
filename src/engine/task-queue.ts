@@ -72,7 +72,15 @@ export class TaskQueue {
 		if (file instanceof TFile) {
 			await this.app.vault.modify(file, JSON.stringify(data, null, 2));
 		} else {
-			await this.app.vault.create(this.queuePath, JSON.stringify(data, null, 2));
+			try {
+				await this.app.vault.create(this.queuePath, JSON.stringify(data, null, 2));
+			} catch {
+				// file was created by a concurrent process; modify it instead
+				const f = this.app.vault.getAbstractFileByPath(this.queuePath);
+				if (f instanceof TFile) {
+					await this.app.vault.modify(f, JSON.stringify(data, null, 2));
+				}
+			}
 		}
 	}
 
@@ -199,9 +207,9 @@ export class TaskQueue {
 			task.progress = 100;
 			task.completedAt = new Date().toISOString();
 			this.emit(task);
-			await this.save();
 			this.currentTask = null;
-			this.processNext();
+			await this.save();
+			await this.processNext();
 		}
 	}
 
@@ -215,9 +223,9 @@ export class TaskQueue {
 			task.error = error;
 			task.completedAt = new Date().toISOString();
 			this.emit(task);
-			await this.save();
 			this.currentTask = null;
-			this.processNext();
+			await this.save();
+			await this.processNext();
 		}
 	}
 
