@@ -43,5 +43,6 @@ export abstract class LLMProvider {
 	abstract readonly name: string;
 	abstract complete(messages: LLMMessage[], options?: LLMCompleteOptions): Promise<LLMCompleteResult>;
 	abstract stream(messages: LLMMessage[], options: LLMStreamOptions): Promise<LLMCompleteResult>;
+	abstract test(): Promise<{ ok: boolean; error?: string; model?: string }>;
 	embed?(texts: string[], abortSignal?: AbortSignal): Promise<LLMEmbedResult>;
 }

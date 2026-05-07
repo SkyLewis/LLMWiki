@@ -11,6 +11,19 @@ export class OllamaProvider extends LLMProvider {
 		this.baseUrl = config.baseUrl ?? "http://localhost:11434";
 	}
 
+	async test(): Promise<{ ok: boolean; error?: string; model?: string }> {
+		try {
+			const response = await fetch(`${this.baseUrl}/api/tags`, { method: "GET" });
+			if (!response.ok) {
+				return { ok: false, error: `HTTP ${response.status} ${response.statusText}` };
+			}
+			return { ok: true, model: this.config.model };
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : String(err);
+			return { ok: false, error: msg };
+		}
+	}
+
 	async complete(messages: LLMMessage[], options?: LLMCompleteOptions): Promise<LLMCompleteResult> {
 		const response = await fetch(`${this.baseUrl}/api/chat`, {
 			method: "POST",

@@ -1,6 +1,10 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type LLMWikiPlugin from "../main";
 import type { ModelRouterConfig, ModelTierConfig } from "../llm/model-router";
+import { ClaudeProvider } from "../llm/claude-provider";
+import { OpenAIProvider } from "../llm/openai-provider";
+import { OllamaProvider } from "../llm/ollama-provider";
+import type { LLMConfig } from "../llm/provider";
 
 export interface LLMWikiSettings {
 	rawPath: string;
@@ -250,6 +254,30 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 						if (!this.plugin.settings.modelRouter[tier]) return;
 						(this.plugin.settings.modelRouter[tier] as ModelTierConfig).baseUrl = value || undefined;
 						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("")
+			.addButton((btn) =>
+				btn
+					.setButtonText("Test Connection")
+					.setClass("test-connection-btn")
+					.onClick(async () => {
+						if (!this.plugin.settings.modelRouter[tier]) return;
+						const cfg = this.plugin.settings.modelRouter[tier] as ModelTierConfig;
+						const llmConfig: LLMConfig = {
+							apiKey: cfg.apiKey || undefined,
+							baseUrl: cfg.baseUrl,
+							model: cfg.model,
+						};
+						let provider;
+						if (cfg.provider === "claude") provider = new ClaudeProvider(llmConfig);
+						else if (cfg.provider === "openai") provider = new OpenAIProvider(llmConfig);
+						else if (cfg.provider === "ollama") provider = new OllamaProvider(llmConfig);
+						if (!provider) return;
+						const result = await provider.test();
+						new Notice(result.ok ? `✓ Connected — model: ${result.model}` : `✗ Failed: ${result.error}`);
 					})
 			);
 	}

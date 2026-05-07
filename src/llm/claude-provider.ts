@@ -10,7 +10,7 @@ export class ClaudeProvider extends LLMProvider {
 		super();
 		this.config = config;
 		this.client = new Anthropic({
-			apiKey: config.apiKey,
+			apiKey: config.apiKey || undefined,
 			baseURL: config.baseUrl,
 			dangerouslyAllowBrowser: true,
 		});
@@ -45,6 +45,20 @@ export class ClaudeProvider extends LLMProvider {
 			},
 			model: response.model,
 		};
+	}
+
+	async test(): Promise<{ ok: boolean; error?: string; model?: string }> {
+		try {
+			const response = await this.client.messages.create({
+				model: this.config.model,
+				max_tokens: 1,
+				messages: [{ role: "user", content: "hi" }],
+			});
+			return { ok: true, model: response.model };
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : String(err);
+			return { ok: false, error: msg };
+		}
 	}
 
 	async stream(messages: LLMMessage[], options: LLMStreamOptions): Promise<LLMCompleteResult> {

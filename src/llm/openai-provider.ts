@@ -10,9 +10,23 @@ export class OpenAIProvider extends LLMProvider {
 		super();
 		this.config = config;
 		this.client = new OpenAI({
-			apiKey: config.apiKey,
+			apiKey: config.apiKey || undefined,
 			baseURL: config.baseUrl,
 		});
+	}
+
+	async test(): Promise<{ ok: boolean; error?: string; model?: string }> {
+		try {
+			const response = await this.client.chat.completions.create({
+				model: this.config.model,
+				max_tokens: 1,
+				messages: [{ role: "user", content: "hi" }],
+			});
+			return { ok: true, model: response.model };
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : String(err);
+			return { ok: false, error: msg };
+		}
 	}
 
 	async complete(messages: LLMMessage[], options?: LLMCompleteOptions): Promise<LLMCompleteResult> {
