@@ -33,16 +33,13 @@ export class GraphIndex {
 
 	static async load(app: App, llmWikiDir: string): Promise<GraphIndex> {
 		const graphPath = `${llmWikiDir}/graph.json`;
-		const file = app.vault.getAbstractFileByPath(graphPath);
-
 		let data: GraphData = { nodes: {}, edges: [] };
-		if (file instanceof TFile) {
-			try {
-				const content = await app.vault.read(file);
-				data = JSON.parse(content);
-			} catch {
-				data = { nodes: {}, edges: [] };
-			}
+
+		try {
+			const content = await app.vault.adapter.read(graphPath);
+			data = JSON.parse(content);
+		} catch {
+			// File doesn't exist yet — use empty data
 		}
 
 		return new GraphIndex(app, graphPath, data);
@@ -51,16 +48,7 @@ export class GraphIndex {
 	static async create(app: App, llmWikiDir: string): Promise<GraphIndex> {
 		const graphPath = `${llmWikiDir}/graph.json`;
 		const data: GraphData = { nodes: {}, edges: [] };
-
-		const file = app.vault.getAbstractFileByPath(graphPath);
-		if (file instanceof TFile) {
-			await app.vault.modify(file, JSON.stringify(data, null, 2));
-		} else if (file === null) {
-			await app.vault.create(graphPath, JSON.stringify(data, null, 2));
-		} else {
-			throw new Error(`Graph index path conflicts with existing folder: ${graphPath}`);
-		}
-
+		await app.vault.adapter.write(graphPath, JSON.stringify(data, null, 2));
 		return new GraphIndex(app, graphPath, data);
 	}
 
@@ -216,30 +204,11 @@ export class GraphIndex {
 	 * Persist graph to disk
 	 */
 	async save(): Promise<void> {
-		const file = this.app.vault.getAbstractFileByPath(this.graphPath);
-		console.log(`[GraphIndex] save: path=${this.graphPath}, file=${file ? file.constructor.name : 'null'}`);
-		const content = JSON.stringify(this.data, null, 2);
-
-		if (file instanceof TFile) {
-			await this.app.vault.modify(file, content);
-		} else {
-			// Race: file was null at check but may have been created since.
-			// Try create first, fall back to modify if already exists.
-			try {
-				await this.app.vault.create(this.graphPath, content);
-			} catch (e) {
-				if ((e as Error).message.includes("already exists")) {
-					const f = this.app.vault.getAbstractFileByPath(this.graphPath);
-					if (f instanceof TFile) {
-						await this.app.vault.modify(f, content);
-					} else {
-						throw e;
-					}
-				} else {
-					throw e;
-				}
-			}
+		const dir = this.graphPath.substring(0, this.graphPath.lastIndexOf("/"));
+		if (dir && !(this.app.vault.getAbstractFileByPath(dir) instanceof TFolder)) {
+			try { await this.app.vault.createFolder(dir); } catch { /* already exists */ }
 		}
+		await this.app.vault.adapter.write(this.graphPath, JSON.stringify(this.data, null, 2));
 	}
 
 	/**

@@ -97,25 +97,11 @@ export class IndexManager {
 			content += "\n";
 		}
 
-		const file = this.app.vault.getAbstractFileByPath(this.indexPath);
-		if (file instanceof TFile) {
-			await this.app.vault.modify(file, content);
-		} else {
-			try {
-				await this.app.vault.create(this.indexPath, content);
-			} catch (e) {
-				if ((e as Error).message.includes("already exists")) {
-					const f = this.app.vault.getAbstractFileByPath(this.indexPath);
-					if (f instanceof TFile) {
-						await this.app.vault.modify(f, content);
-					} else {
-						throw e;
-					}
-				} else {
-					throw e;
-				}
-			}
+		const dir = this.indexPath.substring(0, this.indexPath.lastIndexOf("/"));
+		if (dir && !(this.app.vault.getAbstractFileByPath(dir) instanceof TFolder)) {
+			try { await this.app.vault.createFolder(dir); } catch { /* already exists */ }
 		}
+		await this.app.vault.adapter.write(this.indexPath, content);
 	}
 
 	/**
@@ -253,34 +239,20 @@ export class IndexManager {
 	}
 
 	private async readContent(): Promise<string> {
-		const file = this.app.vault.getAbstractFileByPath(this.indexPath);
-		if (file instanceof TFile) {
-			return this.app.vault.read(file);
+		try {
+			return await this.app.vault.adapter.read(this.indexPath);
+		} catch {
+			return `# Wiki Index\n\n> Auto-generated index.\n\n`;
 		}
-		return `# Wiki Index\n\n> Auto-generated index.\n\n`;
 	}
 
 	private async save(ast: MarkdownAST): Promise<void> {
 		const content = ast.toString();
-		const file = this.app.vault.getAbstractFileByPath(this.indexPath);
-		if (file instanceof TFile) {
-			await this.app.vault.modify(file, content);
-		} else {
-			try {
-				await this.app.vault.create(this.indexPath, content);
-			} catch (e) {
-				if ((e as Error).message.includes("already exists")) {
-					const f = this.app.vault.getAbstractFileByPath(this.indexPath);
-					if (f instanceof TFile) {
-						await this.app.vault.modify(f, content);
-					} else {
-						throw e;
-					}
-				} else {
-					throw e;
-				}
-			}
+		const dir = this.indexPath.substring(0, this.indexPath.lastIndexOf("/"));
+		if (dir && !(this.app.vault.getAbstractFileByPath(dir) instanceof TFolder)) {
+			try { await this.app.vault.createFolder(dir); } catch { /* already exists */ }
 		}
+		await this.app.vault.adapter.write(this.indexPath, content);
 	}
 
 	private escapeRegex(str: string): string {

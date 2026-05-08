@@ -1,4 +1,4 @@
-import { App, TFile } from "obsidian";
+import { App, TFolder } from "obsidian";
 
 export interface LogEntry {
 	timestamp: string;
@@ -25,26 +25,15 @@ export class LogManager {
 	async append(entry: LogEntry): Promise<void> {
 		const line = this.formatEntry(entry);
 
-		const file = this.app.vault.getAbstractFileByPath(this.logPath);
-		if (file instanceof TFile) {
-			const existing = await this.app.vault.read(file);
-			await this.app.vault.modify(file, existing + "\n" + line);
-		} else {
-			try {
-				await this.app.vault.create(this.logPath, `# Wiki Log\n\n${line}\n`);
-			} catch (e) {
-				if ((e as Error).message.includes("already exists")) {
-					const f = this.app.vault.getAbstractFileByPath(this.logPath);
-					if (f instanceof TFile) {
-						const existing = await this.app.vault.read(f);
-						await this.app.vault.modify(f, existing + "\n" + line);
-					} else {
-						throw e;
-					}
-				} else {
-					throw e;
-				}
+		try {
+			const existing = await this.app.vault.adapter.read(this.logPath);
+			await this.app.vault.adapter.write(this.logPath, existing + "\n" + line);
+		} catch {
+			const dir = this.logPath.substring(0, this.logPath.lastIndexOf("/"));
+			if (dir && !(this.app.vault.getAbstractFileByPath(dir) instanceof TFolder)) {
+				try { await this.app.vault.createFolder(dir); } catch { /* already exists */ }
 			}
+			await this.app.vault.adapter.write(this.logPath, `# Wiki Log\n\n${line}\n`);
 		}
 	}
 
@@ -71,48 +60,41 @@ export class LogManager {
 		for (const line of lines) {
 			if (line.startsWith("## [")) {
 				currentHeader = line;
-			} else if (currentHeader && (operation || keyword)) {
-				const entry = this.parseEntry(currentHeader);
+			} else if (currentHeader && line.startsWith("- ")) {
+				const entry = this.parseEntry(currentHeader + "\n" + line);
 				if (!entry) continue;
 
-				const matchesOp = !operation || entry.operation === operation;
-				const matchesKeyword = !keyword ||
-					entry.title.toLowerCase().includes(keyword.toLowerCase()) ||
-					entry.description.toLowerCase().includes(keyword.toLowerCase());
+				if (operation && entry.operation !== operation) continue;
+				if (keyword && !entry.title.toLowerCase().includes(keyword.toLowerCase()) && !entry.description.toLowerCase().includes(keyword.toLowerCase())) continue;
 
-				if (matchesOp && matchesKeyword) {
-					entries.push(entry);
-				}
-
-				if (entries.length >= limit) break;
+				entries.push(entry);
 			}
 		}
 
-		return entries;
+		return entries.slice(-limit).reverse();
 	}
 
 	private formatEntry(entry: LogEntry): string {
-		const pages = entry.pagesTouched.length > 0
-			? `\n- Pages: ${entry.pagesTouched.map((p) => `[[${p}]]`).join(", ")}`
-			: "";
-		const sources = entry.sourcesReferenced.length > 0
-			? `\n- Sources: ${entry.sourcesReferenced.map((s) => `[[${s}]]`).join(", ")}`
-			: "";
-		const txId = entry.transactionId ? `\n- Transaction: ${entry.transactionId}` : "";
-
-		return `## [${entry.timestamp}] ${entry.operation} | ${entry.title}\n${entry.description}${pages}${sources}${txId}`;
+		const lines = [
+			`## [${entry.timestamp}] ${entry.operation}: ${entry.title}`,
+			`${entry.description}`,
+			`- pages: ${entry.pagesTouched.join(", ") || "none"}`,
+			`- sources: ${entry.sourcesReferenced.join(", ") || "none"}`,
+		];
+		if (entry.transactionId) {
+			lines.push(`- tx: ${entry.transactionId}`);
+		}
+		return lines.join("\n");
 	}
 
 	private parseEntry(line: string): LogEntry | null {
-		const match = line.match(
-			/^## \[([^\]]+)\]\s+(\w+)\s+\|\s+(.+)$/
-		);
+		const match = line.match(/^## \[(.+?)\] (\w+): (.+)/);
 		if (!match) return null;
 
 		return {
 			timestamp: match[1],
 			operation: match[2] as LogEntry["operation"],
-			title: match[3].trim(),
+			title: match[3],
 			description: "",
 			pagesTouched: [],
 			sourcesReferenced: [],
@@ -120,10 +102,10 @@ export class LogManager {
 	}
 
 	private async readContent(): Promise<string> {
-		const file = this.app.vault.getAbstractFileByPath(this.logPath);
-		if (file instanceof TFile) {
-			return this.app.vault.read(file);
+		try {
+			return await this.app.vault.adapter.read(this.logPath);
+		} catch {
+			return "# Wiki Log\n\n";
 		}
-		return "# Wiki Log\n\n";
 	}
 }

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.22] - 2026-05-08
+
+### Fixed
+- **Stale index "File already exists" bug**: Replaced all `vault.create/modify/read` with `vault.adapter.write/read` for internal data files (graph.json, index, log). Obsidian's `getAbstractFileByPath` returns null for files in `.llm-wiki/` (hidden folder) even when they exist on disk, causing `vault.create()` to throw "File already exists". `adapter.write()` creates or overwrites atomically, eliminating the race condition entirely.
+
 ## [0.2.20] - 2026-05-08
 
 ### Fixed
