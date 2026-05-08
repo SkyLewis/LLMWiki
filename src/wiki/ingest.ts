@@ -66,10 +66,15 @@ export class IngestEngine {
 	 * Ingest a source file: two-phase LLM call → merge → graph update → diff review
 	 */
 	async ingest(sourcePath: string, abortSignal?: AbortSignal): Promise<IngestResult> {
+		console.log(`[Ingest] ===== START =====`);
+		console.log(`[Ingest] sourcePath: ${sourcePath}`);
+
 		const sourceContent = await this.readSource(sourcePath);
 		const sourceTitle = this.titleFromPath(sourcePath);
+		console.log(`[Ingest] sourceTitle: ${sourceTitle}, content length: ${sourceContent.length}`);
 
 		// Phase 1: Extract (lightweight model)
+		console.log(`[Ingest] Phase 1: Extract...`);
 		const { provider: extractProvider, tier: extractTier } = this.modelRouter.resolve("ingest-extract");
 		const extractPrompt = this.promptBuilder.buildIngestExtractPrompt(sourceContent, sourceTitle);
 		const extractMessages: LLMMessage[] = [
@@ -89,12 +94,16 @@ export class IngestEngine {
 			timestamp: Date.now(),
 		});
 
+		console.log(`[Ingest] Extract tokens: in=${extractResult.usage.inputTokens}, out=${extractResult.usage.outputTokens}`);
 		const extraction = this.parseJSON<ExtractionResult>(extractResult.text);
+		console.log(`[Ingest] Extraction result: ${extraction.entities?.length ?? 0} entities, ${extraction.concepts?.length ?? 0} concepts, ${extraction.key_claims?.length ?? 0} claims`);
 
 		// Find existing wiki pages that may be relevant
 		const existingPages = await this.findRelevantPages(extraction);
+		console.log(`[Ingest] Found ${existingPages.length} relevant existing pages`);
 
 		// Phase 2: Synthesize (heavy_lift model)
+		console.log(`[Ingest] Phase 2: Synthesize...`);
 		const { provider: synthProvider, tier: synthTier } = this.modelRouter.resolve("ingest-synthesize");
 		const synthPrompt = this.promptBuilder.buildIngestSynthesizePrompt(
 			sourceContent.substring(0, 3000), // truncate to save tokens
@@ -116,7 +125,9 @@ export class IngestEngine {
 			timestamp: Date.now(),
 		});
 
+		console.log(`[Ingest] Synthesize tokens: in=${synthResult.usage.inputTokens}, out=${synthResult.usage.outputTokens}`);
 		const synthesis = this.parseJSON<SynthesisResult>(synthResult.text);
+		console.log(`[Ingest] Synthesis result: ${synthesis.new_pages?.length ?? 0} new pages, ${synthesis.updates?.length ?? 0} updates, graph nodes=${synthesis.graph_updates?.nodes?.length ?? 0}, edges=${synthesis.graph_updates?.edges?.length ?? 0}`);
 
 		// Apply changes via merge protocol within a transaction
 		const allFilePaths = [
@@ -124,6 +135,7 @@ export class IngestEngine {
 			...synthesis.updates.map((u) => u.path),
 			synthesis.source_page.path,
 		];
+		console.log(`[Ingest] Transaction paths: ${allFilePaths.join(", ")}`);
 
 		const tx = await Transaction.begin(this.app, this.settings.llmWikiDir, allFilePaths);
 
@@ -138,26 +150,31 @@ export class IngestEngine {
 
 			// Create new pages
 			for (const page of synthesis.new_pages) {
+				console.log(`[Ingest] Creating page: ${page.path}`);
 				await this.ensureDirectory(page.path);
 				const file = this.app.vault.getAbstractFileByPath(page.path);
 				if (file instanceof TFile) {
 					await this.app.vault.modify(file, page.content);
 					result.pagesUpdated.push(page.path);
+					console.log(`[Ingest] Updated existing: ${page.path}`);
 				} else {
 					await this.app.vault.create(page.path, page.content);
 					result.pagesCreated.push(page.path);
+					console.log(`[Ingest] Created new: ${page.path}`);
 				}
 				await tx.recordOp(`create:${page.path}`);
 			}
 
 			// Update existing pages via merge protocol
 			for (const update of synthesis.updates) {
+				console.log(`[Ingest] Updating page: ${update.path}`);
 				const file = this.app.vault.getAbstractFileByPath(update.path);
 				if (!(file instanceof TFile)) continue;
 
 				const existing = await this.app.vault.read(file);
 
 				if (update.flag_contradiction) {
+					console.log(`[Ingest] Contradiction flagged for: ${update.path}`);
 					const mergeResult = await this.mergeProtocol.appendWithContradiction(
 						existing,
 						update.append_sections,
@@ -182,6 +199,7 @@ export class IngestEngine {
 			}
 
 			// Create source summary page
+			console.log(`[Ingest] Source summary: ${synthesis.source_page.path}`);
 			await this.ensureDirectory(synthesis.source_page.path);
 			const sourceFile = this.app.vault.getAbstractFileByPath(synthesis.source_page.path);
 			if (sourceFile instanceof TFile) {
@@ -195,6 +213,7 @@ export class IngestEngine {
 
 			// Update graph index
 			if (synthesis.graph_updates) {
+				console.log(`[Ingest] Updating graph: ${synthesis.graph_updates.nodes?.length ?? 0} nodes, ${synthesis.graph_updates.edges?.length ?? 0} edges`);
 				for (const node of synthesis.graph_updates.nodes) {
 					this.graphIndex.addNode(node);
 					result.graphNodesAdded++;
@@ -208,8 +227,12 @@ export class IngestEngine {
 
 			// Commit transaction
 			await tx.commit();
+			console.log(`[Ingest] ===== DONE =====`);
+			console.log(`[Ingest] Result: created=${result.pagesCreated.length}, updated=${result.pagesUpdated.length}, contradictions=${result.contradictions.length}, graphNodes=${result.graphNodesAdded}, graphEdges=${result.graphEdgesAdded}`);
 			return result;
 		} catch (error) {
+			console.error(`[Ingest] ERROR: ${error.message}`);
+			console.error(`[Ingest] Stack: ${error.stack}`);
 			await tx.rollback();
 			throw error;
 		}
@@ -274,11 +297,13 @@ export class IngestEngine {
 			if (!folder) {
 				try {
 					await this.app.vault.createFolder(current);
+					console.log(`[Ingest] Created folder: ${current}`);
 				} catch (e) {
-					// Ignore "already exists" error (race condition from concurrent calls)
-					if (!e.message.includes("already exists")) {
-						throw e;
+					if (e.message.includes("already exists")) {
+						console.log(`[Ingest] Folder already exists (skip): ${current}`);
+						continue;
 					}
+					throw e;
 				}
 			}
 		}
@@ -288,6 +313,7 @@ export class IngestEngine {
 		// Extract JSON from ```json code blocks only, handling newlines robustly
 		const jsonMatch = text.match(/```json\s*\n([\s\S]*?)\n\s*```/);
 		const jsonStr = jsonMatch?.[1] ?? text;
+		console.log(`[Ingest] parseJSON: matched=${!!jsonMatch}, length=${jsonStr.trim().length}`);
 		return JSON.parse(jsonStr.trim());
 	}
 }

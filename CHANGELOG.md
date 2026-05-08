@@ -5,11 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.8] - 2026-05-08
+
+### Added
+- **Ingest logging**: Added `console.log` instrumentation at key steps — phase start/end, token counts, extraction/synthesis results, page create/update operations, graph updates, and errors with stack traces
+
+## [0.2.7] - 2026-05-08
+
+### Fixed
+- **Directory already exists error**: `ensureDirectory` catches "already exists" errors gracefully, preventing ingest from exiting prematurely when multiple pages share the same parent directory
+
 ## [0.2.6] - 2026-05-08
 
 ### Fixed
 - **Ingest JSON parse error**: `parseJSON` regex now correctly extracts JSON from ` ```json ` code blocks only, preventing `thinking` block content from corrupting JSON extraction
-- **Directory already exists error**: `ensureDirectory` catches "already exists" errors gracefully, preventing ingest from exiting prematurely when multiple pages share the same parent directory
 
 ## [0.2.1] - 2026-05-08
 
