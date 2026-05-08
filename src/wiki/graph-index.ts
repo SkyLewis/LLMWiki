@@ -217,11 +217,13 @@ export class GraphIndex {
 	 */
 	async save(): Promise<void> {
 		const file = this.app.vault.getAbstractFileByPath(this.graphPath);
+		console.log(`[GraphIndex] save: path=${this.graphPath}, file=${file ? file.constructor.name : 'null'}`);
 		const content = JSON.stringify(this.data, null, 2);
 
 		if (file instanceof TFile) {
 			await this.app.vault.modify(file, content);
 		} else if (file === null) {
+			console.log(`[GraphIndex] save: creating new file at ${this.graphPath}`);
 			await this.app.vault.create(this.graphPath, content);
 		} else {
 			throw new Error(`Graph index path conflicts with existing folder: ${this.graphPath}`);
