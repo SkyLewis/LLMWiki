@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.20] - 2026-05-08
+
+### Fixed
+- **Race condition in graph/index/log saves**: `getAbstractFileByPath` returns null but file is created before `create()` call (TOCTOU). All save operations now use try/create → catch/modify pattern to handle concurrent creation
+
 ## [0.2.18] - 2026-05-08
 
 ### Added

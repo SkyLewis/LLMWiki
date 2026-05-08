@@ -100,10 +100,21 @@ export class IndexManager {
 		const file = this.app.vault.getAbstractFileByPath(this.indexPath);
 		if (file instanceof TFile) {
 			await this.app.vault.modify(file, content);
-		} else if (file === null) {
-			await this.app.vault.create(this.indexPath, content);
 		} else {
-			throw new Error(`Index path conflicts with existing folder: ${this.indexPath}`);
+			try {
+				await this.app.vault.create(this.indexPath, content);
+			} catch (e) {
+				if ((e as Error).message.includes("already exists")) {
+					const f = this.app.vault.getAbstractFileByPath(this.indexPath);
+					if (f instanceof TFile) {
+						await this.app.vault.modify(f, content);
+					} else {
+						throw e;
+					}
+				} else {
+					throw e;
+				}
+			}
 		}
 	}
 
@@ -254,10 +265,21 @@ export class IndexManager {
 		const file = this.app.vault.getAbstractFileByPath(this.indexPath);
 		if (file instanceof TFile) {
 			await this.app.vault.modify(file, content);
-		} else if (file === null) {
-			await this.app.vault.create(this.indexPath, content);
 		} else {
-			throw new Error(`Index path conflicts with existing folder: ${this.indexPath}`);
+			try {
+				await this.app.vault.create(this.indexPath, content);
+			} catch (e) {
+				if ((e as Error).message.includes("already exists")) {
+					const f = this.app.vault.getAbstractFileByPath(this.indexPath);
+					if (f instanceof TFile) {
+						await this.app.vault.modify(f, content);
+					} else {
+						throw e;
+					}
+				} else {
+					throw e;
+				}
+			}
 		}
 	}
 

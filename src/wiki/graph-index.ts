@@ -222,11 +222,23 @@ export class GraphIndex {
 
 		if (file instanceof TFile) {
 			await this.app.vault.modify(file, content);
-		} else if (file === null) {
-			console.log(`[GraphIndex] save: creating new file at ${this.graphPath}`);
-			await this.app.vault.create(this.graphPath, content);
 		} else {
-			throw new Error(`Graph index path conflicts with existing folder: ${this.graphPath}`);
+			// Race: file was null at check but may have been created since.
+			// Try create first, fall back to modify if already exists.
+			try {
+				await this.app.vault.create(this.graphPath, content);
+			} catch (e) {
+				if ((e as Error).message.includes("already exists")) {
+					const f = this.app.vault.getAbstractFileByPath(this.graphPath);
+					if (f instanceof TFile) {
+						await this.app.vault.modify(f, content);
+					} else {
+						throw e;
+					}
+				} else {
+					throw e;
+				}
+			}
 		}
 	}
 

@@ -29,10 +29,22 @@ export class LogManager {
 		if (file instanceof TFile) {
 			const existing = await this.app.vault.read(file);
 			await this.app.vault.modify(file, existing + "\n" + line);
-		} else if (file === null) {
-			await this.app.vault.create(this.logPath, `# Wiki Log\n\n${line}\n`);
 		} else {
-			throw new Error(`Log path conflicts with existing folder: ${this.logPath}`);
+			try {
+				await this.app.vault.create(this.logPath, `# Wiki Log\n\n${line}\n`);
+			} catch (e) {
+				if ((e as Error).message.includes("already exists")) {
+					const f = this.app.vault.getAbstractFileByPath(this.logPath);
+					if (f instanceof TFile) {
+						const existing = await this.app.vault.read(f);
+						await this.app.vault.modify(f, existing + "\n" + line);
+					} else {
+						throw e;
+					}
+				} else {
+					throw e;
+				}
+			}
 		}
 	}
 
