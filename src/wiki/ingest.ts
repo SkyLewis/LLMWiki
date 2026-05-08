@@ -241,7 +241,14 @@ export class IngestEngine {
 					this.graphIndex.addEdge(edge as GraphEdge);
 					result.graphEdgesAdded++;
 				}
-				await this.graphIndex.save();
+				console.log(`[Ingest] Saving graph index...`);
+				try {
+					await this.graphIndex.save();
+					console.log(`[Ingest] Graph index saved OK`);
+				} catch (e) {
+					console.error(`[Ingest] Graph index save FAILED: ${(e as Error).message}`);
+					throw e;
+				}
 			}
 
 			// Commit transaction
