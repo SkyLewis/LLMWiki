@@ -60,13 +60,15 @@ export class AnthropicCompatProvider extends LLMProvider {
 
 		const body: Record<string, unknown> = {
 			model: this.config.model,
-			max_tokens: options?.maxTokens ?? this.config.maxTokens ?? 4096,
-			temperature: options?.temperature ?? this.config.temperature ?? 0.3,
 			messages: nonSystemMsgs.map((m) => ({
 				role: m.role as "user" | "assistant",
 				content: m.content,
 			})),
 		};
+		const maxTokens = options?.maxTokens ?? this.config.maxTokens;
+		if (maxTokens !== undefined) body["max_tokens"] = maxTokens;
+		const temperature = options?.temperature ?? this.config.temperature ?? 0.3;
+		if (temperature !== undefined) body["temperature"] = temperature;
 		if (systemMsg) body["system"] = systemMsg.content;
 		if (options?.stopSequences) body["stop_sequences"] = options.stopSequences;
 
@@ -105,14 +107,16 @@ export class AnthropicCompatProvider extends LLMProvider {
 
 		const body: Record<string, unknown> = {
 			model: this.config.model,
-			max_tokens: options.maxTokens ?? this.config.maxTokens ?? 4096,
-			temperature: options.temperature ?? this.config.temperature ?? 0.3,
 			messages: nonSystemMsgs.map((m) => ({
 				role: m.role as "user" | "assistant",
 				content: m.content,
 			})),
 			stream: true,
 		};
+		const maxTokens = options.maxTokens ?? this.config.maxTokens;
+		if (maxTokens !== undefined) body["max_tokens"] = maxTokens;
+		const temperature = options.temperature ?? this.config.temperature ?? 0.3;
+		if (temperature !== undefined) body["temperature"] = temperature;
 		if (systemMsg) body["system"] = systemMsg.content;
 		if (options.stopSequences) body["stop_sequences"] = options.stopSequences;
 

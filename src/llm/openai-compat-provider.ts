@@ -51,9 +51,11 @@ export class OpenAICompatProvider extends LLMProvider {
 				role: m.role as "system" | "user" | "assistant",
 				content: m.content,
 			})),
-			max_tokens: options?.maxTokens ?? this.config.maxTokens ?? 4096,
-			temperature: options?.temperature ?? this.config.temperature ?? 0.3,
 		};
+		const maxTokens = options?.maxTokens ?? this.config.maxTokens;
+		if (maxTokens !== undefined) body["max_tokens"] = maxTokens;
+		const temperature = options?.temperature ?? this.config.temperature ?? 0.3;
+		if (temperature !== undefined) body["temperature"] = temperature;
 		if (options?.stopSequences) body["stop"] = options.stopSequences;
 		if (options?.jsonMode) body["response_format"] = { type: "json_object" };
 
@@ -87,10 +89,12 @@ export class OpenAICompatProvider extends LLMProvider {
 				role: m.role as "system" | "user" | "assistant",
 				content: m.content,
 			})),
-			max_tokens: options.maxTokens ?? this.config.maxTokens ?? 4096,
-			temperature: options.temperature ?? this.config.temperature ?? 0.3,
 			stream: true,
 		};
+		const maxTokens = options.maxTokens ?? this.config.maxTokens;
+		if (maxTokens !== undefined) body["max_tokens"] = maxTokens;
+		const temperature = options.temperature ?? this.config.temperature ?? 0.3;
+		if (temperature !== undefined) body["temperature"] = temperature;
 		if (options.stopSequences) body["stop"] = options.stopSequences;
 		if (options.jsonMode) body["response_format"] = { type: "json_object" };
 
