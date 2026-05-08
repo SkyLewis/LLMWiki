@@ -26,19 +26,29 @@ export class Transaction {
 			const txDir = `${llmWikiDir}/tx/${id}`;
 			console.log(`[Transaction] begin: id=${id}, llmWikiDir=${llmWikiDir}, fileCount=${filePaths.length}`);
 
+			const safeCreateFolder = async (path: string, label: string) => {
+				try {
+					await app.vault.createFolder(path);
+					console.log(`[Transaction] Created: ${label} (${path})`);
+				} catch (e) {
+					if (e.message.includes("already exists")) {
+						console.log(`[Transaction] Already exists (skip): ${label} (${path})`);
+					} else {
+						throw e;
+					}
+				}
+			};
+
 			// Ensure tx directory exists
 			const folder = app.vault.getAbstractFileByPath(llmWikiDir);
 			if (!folder) {
-				console.log(`[Transaction] Creating llmWikiDir: ${llmWikiDir}`);
-				await app.vault.createFolder(llmWikiDir);
+				await safeCreateFolder(llmWikiDir, "llmWikiDir");
 			}
 			const txFolder = app.vault.getAbstractFileByPath(`${llmWikiDir}/tx`);
 			if (!txFolder) {
-				console.log(`[Transaction] Creating tx folder: ${llmWikiDir}/tx`);
-				await app.vault.createFolder(`${llmWikiDir}/tx`);
+				await safeCreateFolder(`${llmWikiDir}/tx`, "tx folder");
 			}
-			console.log(`[Transaction] Creating txDir: ${txDir}`);
-			await app.vault.createFolder(txDir);
+			await safeCreateFolder(txDir, "txDir");
 
 			// Snapshot all files
 			const files: TransactionManifest["files"] = [];
