@@ -1,6 +1,8 @@
 import { LLMProvider, LLMConfig } from "./provider";
 import { ClaudeProvider } from "./claude-provider";
 import { OpenAIProvider } from "./openai-provider";
+import { OpenAICompatProvider } from "./openai-compat-provider";
+import { AnthropicCompatProvider } from "./anthropic-compat-provider";
 import { OllamaProvider } from "./ollama-provider";
 
 export type ModelTier = "default" | "heavy_lift" | "lightweight" | "local_fallback";
@@ -38,7 +40,7 @@ export interface ModelRouterConfig {
 }
 
 export interface ModelTierConfig {
-	provider: "claude" | "openai" | "ollama";
+	provider: "claude" | "claude_compat" | "openai" | "openai_compat" | "ollama";
 	model: string;
 	authMethod?: "apiKey" | "authToken";
 	apiKey?: string;
@@ -90,8 +92,14 @@ export class ModelRouter {
 				case "claude":
 					this.providers.set(key, new ClaudeProvider(llmConfig));
 					break;
+				case "claude_compat":
+					this.providers.set(key, new AnthropicCompatProvider(llmConfig));
+					break;
 				case "openai":
 					this.providers.set(key, new OpenAIProvider(llmConfig));
+					break;
+				case "openai_compat":
+					this.providers.set(key, new OpenAICompatProvider(llmConfig));
 					break;
 				case "ollama":
 					this.providers.set(key, new OllamaProvider(llmConfig));

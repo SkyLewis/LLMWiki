@@ -198,7 +198,13 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 			.setName("Provider")
 			.addDropdown((dd) =>
 				dd
-					.addOptions({ claude: "Claude", openai: "OpenAI", ollama: "Ollama" })
+					.addOptions({
+					claude: "Claude (官方)",
+					claude_compat: "Claude 兼容 (Bearer/X-Api-Key)",
+					openai: "OpenAI (官方)",
+					openai_compat: "OpenAI 兼容 (Bearer/X-Api-Key)",
+					ollama: "Ollama (本地)",
+				})
 					.setValue(tierConfig.provider)
 					.onChange(async (value: string) => {
 						if (!this.plugin.settings.modelRouter[tier]) {
