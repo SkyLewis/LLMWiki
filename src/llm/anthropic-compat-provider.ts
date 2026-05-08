@@ -13,11 +13,17 @@ export class AnthropicCompatProvider extends LLMProvider {
 		return this.config.baseUrl ?? "https://api.anthropic.com/v1";
 	}
 
+	private get isOfficialAnthropic(): boolean {
+		return !this.config.baseUrl;
+	}
+
 	private get headers(): Record<string, string> {
 		const headers: Record<string, string> = {
 			"Content-Type": "application/json",
-			"anthropic-version": "2023-06-01",
 		};
+		if (this.isOfficialAnthropic) {
+			headers["anthropic-version"] = "2023-06-01";
+		}
 		if (this.config.authMethod === "authToken") {
 			headers["Authorization"] = `Bearer ${this.config.apiKey ?? ""}`;
 		} else {
