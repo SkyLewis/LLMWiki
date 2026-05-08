@@ -100,8 +100,10 @@ export class IndexManager {
 		const file = this.app.vault.getAbstractFileByPath(this.indexPath);
 		if (file instanceof TFile) {
 			await this.app.vault.modify(file, content);
-		} else {
+		} else if (file === null) {
 			await this.app.vault.create(this.indexPath, content);
+		} else {
+			throw new Error(`Index path conflicts with existing folder: ${this.indexPath}`);
 		}
 	}
 
@@ -252,8 +254,10 @@ export class IndexManager {
 		const file = this.app.vault.getAbstractFileByPath(this.indexPath);
 		if (file instanceof TFile) {
 			await this.app.vault.modify(file, content);
-		} else {
+		} else if (file === null) {
 			await this.app.vault.create(this.indexPath, content);
+		} else {
+			throw new Error(`Index path conflicts with existing folder: ${this.indexPath}`);
 		}
 	}
 

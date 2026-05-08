@@ -29,8 +29,10 @@ export class LogManager {
 		if (file instanceof TFile) {
 			const existing = await this.app.vault.read(file);
 			await this.app.vault.modify(file, existing + "\n" + line);
-		} else {
+		} else if (file === null) {
 			await this.app.vault.create(this.logPath, `# Wiki Log\n\n${line}\n`);
+		} else {
+			throw new Error(`Log path conflicts with existing folder: ${this.logPath}`);
 		}
 	}
 

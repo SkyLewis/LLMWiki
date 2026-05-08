@@ -55,8 +55,10 @@ export class GraphIndex {
 		const file = app.vault.getAbstractFileByPath(graphPath);
 		if (file instanceof TFile) {
 			await app.vault.modify(file, JSON.stringify(data, null, 2));
-		} else {
+		} else if (file === null) {
 			await app.vault.create(graphPath, JSON.stringify(data, null, 2));
+		} else {
+			throw new Error(`Graph index path conflicts with existing folder: ${graphPath}`);
 		}
 
 		return new GraphIndex(app, graphPath, data);
@@ -219,8 +221,10 @@ export class GraphIndex {
 
 		if (file instanceof TFile) {
 			await this.app.vault.modify(file, content);
-		} else {
+		} else if (file === null) {
 			await this.app.vault.create(this.graphPath, content);
+		} else {
+			throw new Error(`Graph index path conflicts with existing folder: ${this.graphPath}`);
 		}
 	}
 
