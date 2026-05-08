@@ -201,7 +201,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 			.addDropdown((dd) =>
 				dd
 					.addOptions({
-					"": "使用默认配置 (降级)",
+					"": "使用默认配置",
 					claude: "Claude (官方)",
 					claude_compat: "Claude 兼容 (Bearer/X-Api-Key)",
 					openai: "OpenAI (官方)",
@@ -286,6 +286,19 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 					.onChange(async (value) => {
 						if (!this.plugin.settings.modelRouter[tier]) return;
 						(this.plugin.settings.modelRouter[tier] as ModelTierConfig).baseUrl = value || undefined;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName("Max Tokens")
+			.addText((text) =>
+				text
+					.setPlaceholder("4096")
+					.setValue(tierConfig.maxTokens?.toString() ?? "")
+					.onChange(async (value) => {
+						if (!this.plugin.settings.modelRouter[tier]) return;
+						(this.plugin.settings.modelRouter[tier] as ModelTierConfig).maxTokens = value ? parseInt(value) : undefined;
 						await this.plugin.saveSettings();
 					})
 			);
