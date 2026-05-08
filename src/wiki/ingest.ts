@@ -272,7 +272,14 @@ export class IngestEngine {
 			current = current ? `${current}/${part}` : part;
 			const folder = this.app.vault.getAbstractFileByPath(current);
 			if (!folder) {
-				await this.app.vault.createFolder(current);
+				try {
+					await this.app.vault.createFolder(current);
+				} catch (e) {
+					// Ignore "already exists" error (race condition from concurrent calls)
+					if (!e.message.includes("already exists")) {
+						throw e;
+					}
+				}
 			}
 		}
 	}
