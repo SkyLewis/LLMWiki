@@ -3,6 +3,8 @@ import type LLMWikiPlugin from "../main";
 import type { ModelRouterConfig, ModelTierConfig } from "../llm/model-router";
 import { ClaudeProvider } from "../llm/claude-provider";
 import { OpenAIProvider } from "../llm/openai-provider";
+import { OpenAICompatProvider } from "../llm/openai-compat-provider";
+import { AnthropicCompatProvider } from "../llm/anthropic-compat-provider";
 import { OllamaProvider } from "../llm/ollama-provider";
 import type { LLMConfig } from "../llm/provider";
 
@@ -299,7 +301,9 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 						};
 						let provider;
 						if (cfg.provider === "claude") provider = new ClaudeProvider(llmConfig);
+						else if (cfg.provider === "claude_compat") provider = new AnthropicCompatProvider(llmConfig);
 						else if (cfg.provider === "openai") provider = new OpenAIProvider(llmConfig);
+						else if (cfg.provider === "openai_compat") provider = new OpenAICompatProvider(llmConfig);
 						else if (cfg.provider === "ollama") provider = new OllamaProvider(llmConfig);
 						if (!provider) return;
 						const result = await provider.test();
