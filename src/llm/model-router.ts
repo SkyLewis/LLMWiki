@@ -40,7 +40,7 @@ export interface ModelRouterConfig {
 }
 
 export interface ModelTierConfig {
-	provider: "claude" | "claude_compat" | "openai" | "openai_compat" | "ollama";
+	provider: "" | "claude" | "claude_compat" | "openai" | "openai_compat" | "ollama";
 	model: string;
 	authMethod?: "apiKey" | "authToken";
 	apiKey?: string;
@@ -110,18 +110,16 @@ export class ModelRouter {
 
 	resolve(taskType: TaskType): { provider: LLMProvider; config: ModelTierConfig; tier: ModelTier } {
 		const tier = TASK_TIER_MAP[taskType] ?? "default";
-		const tierConfig = (this.config[tier] && this.config[tier]!.provider)
-			? this.config[tier]
-			: this.config.default;
+		const tierConfig = this.config[tier] ?? this.config.default;
+
+		if (!tierConfig.provider) {
+			throw new Error(`Provider not configured for tier "${tier}". Please set a provider in settings.`);
+		}
 
 		const key = `${tierConfig.provider}:${tierConfig.baseUrl ?? "default"}`;
 		const provider = this.providers.get(key);
 		if (!provider) {
-			// Fallback to default provider
-			const defaultKey = `${this.config.default.provider}:${this.config.default.baseUrl ?? "default"}`;
-			const defaultProvider = this.providers.get(defaultKey);
-			if (!defaultProvider) throw new Error(`No provider available for task ${taskType}`);
-			return { provider: defaultProvider, config: this.config.default, tier: "default" };
+			throw new Error(`No provider available for "${tierConfig.provider}". Check your API key and provider settings.`);
 		}
 
 		return { provider, config: tierConfig, tier };

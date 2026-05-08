@@ -28,20 +28,20 @@ export const DEFAULT_SETTINGS: LLMWikiSettings = {
 	llmWikiDir: ".llm-wiki",
 	modelRouter: {
 		default: {
-			provider: "claude",
-			model: "claude-sonnet-4-20250514",
+			provider: "",
+			model: "",
 			temperature: 0.3,
 			maxTokens: 4096,
 		},
 		heavy_lift: {
-			provider: "claude",
-			model: "claude-opus-4-20250514",
+			provider: "",
+			model: "",
 			temperature: 0.3,
 			maxTokens: 8192,
 		},
 		lightweight: {
-			provider: "claude",
-			model: "claude-haiku-4-20250414",
+			provider: "",
+			model: "",
 			temperature: 0.2,
 			maxTokens: 2048,
 		},
@@ -192,7 +192,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 		new Setting(containerEl).setName(label).setHeading();
 
 		const tierConfig = this.plugin.settings.modelRouter[tier] ?? {
-			provider: "claude" as const,
+			provider: "" as const,
 			model: "",
 		};
 

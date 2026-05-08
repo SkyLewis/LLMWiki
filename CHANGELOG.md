@@ -5,10 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.10] - 2026-05-08
+## [0.2.11] - 2026-05-08
 
-### Added
-- **Retry release**: Retried CI for 0.2.9 failure (npm ci transient error)
+### Changed
+- **Provider default to empty**: Default settings now have `provider: ""` instead of `"claude"`, forcing users to explicitly configure a provider before use
+- **resolve() throws on empty provider**: ModelRouter.resolve() now throws an error if provider is not configured, rather than silently falling back to claude
+
+## [0.2.10] - 2026-05-08
 
 ## [0.2.9] - 2026-05-08
 
