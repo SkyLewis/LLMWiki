@@ -201,21 +201,27 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 			.addDropdown((dd) =>
 				dd
 					.addOptions({
+					"": "使用默认配置 (降级)",
 					claude: "Claude (官方)",
 					claude_compat: "Claude 兼容 (Bearer/X-Api-Key)",
 					openai: "OpenAI (官方)",
 					openai_compat: "OpenAI 兼容 (Bearer/X-Api-Key)",
 					ollama: "Ollama (本地)",
 				})
-					.setValue(tierConfig.provider)
+					.setValue(tierConfig.provider ?? "")
 					.onChange(async (value: string) => {
-						if (!this.plugin.settings.modelRouter[tier]) {
-							this.plugin.settings.modelRouter[tier] = {
-								provider: value as ModelTierConfig["provider"],
-								model: "",
-							};
+						if (value === "") {
+							// 降级到默认配置
+							delete this.plugin.settings.modelRouter[tier];
+						} else {
+							if (!this.plugin.settings.modelRouter[tier]) {
+								this.plugin.settings.modelRouter[tier] = {
+									provider: value as ModelTierConfig["provider"],
+									model: "",
+								};
+							}
+							(this.plugin.settings.modelRouter[tier] as ModelTierConfig).provider = value as ModelTierConfig["provider"];
 						}
-						(this.plugin.settings.modelRouter[tier] as ModelTierConfig).provider = value as ModelTierConfig["provider"];
 						await this.plugin.saveSettings();
 					})
 			);

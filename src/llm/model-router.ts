@@ -110,7 +110,9 @@ export class ModelRouter {
 
 	resolve(taskType: TaskType): { provider: LLMProvider; config: ModelTierConfig; tier: ModelTier } {
 		const tier = TASK_TIER_MAP[taskType] ?? "default";
-		const tierConfig = this.config[tier] ?? this.config.default;
+		const tierConfig = (this.config[tier] && this.config[tier]!.provider)
+			? this.config[tier]
+			: this.config.default;
 
 		const key = `${tierConfig.provider}:${tierConfig.baseUrl ?? "default"}`;
 		const provider = this.providers.get(key);
