@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.9] - 2026-05-08
+
+### Added
+- **Transaction logging**: Added `[Transaction]` prefix logs to `Transaction.begin()` for step-by-step debugging of tx dir creation and manifest writing
+- **File conflict detection**: Added explicit check for TFolder vs TFile vs null in page creation loop, preventing "file already exists" errors when path conflicts with a folder
+
+### Changed
+- **Finer-grained Ingest logging**: Added `File check:` logging before each page create/modify to trace exact file state
+
 ## [0.2.8] - 2026-05-08
 
 ### Added

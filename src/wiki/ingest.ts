@@ -136,8 +136,16 @@ export class IngestEngine {
 			synthesis.source_page.path,
 		];
 		console.log(`[Ingest] Transaction paths: ${allFilePaths.join(", ")}`);
+		console.log(`[Ingest] llmWikiDir: ${this.settings.llmWikiDir}`);
 
-		const tx = await Transaction.begin(this.app, this.settings.llmWikiDir, allFilePaths);
+		let tx;
+		try {
+			tx = await Transaction.begin(this.app, this.settings.llmWikiDir, allFilePaths);
+			console.log(`[Ingest] Transaction started: ${tx.getId()}`);
+		} catch (e) {
+			console.error(`[Ingest] Transaction.begin ERROR: ${e.message}`);
+			throw e;
+		}
 
 		try {
 			const result: IngestResult = {
@@ -153,14 +161,23 @@ export class IngestEngine {
 				console.log(`[Ingest] Creating page: ${page.path}`);
 				await this.ensureDirectory(page.path);
 				const file = this.app.vault.getAbstractFileByPath(page.path);
+				console.log(`[Ingest] File check: ${page.path} -> ${file ? file.constructor.name : 'null'}`);
 				if (file instanceof TFile) {
 					await this.app.vault.modify(file, page.content);
 					result.pagesUpdated.push(page.path);
 					console.log(`[Ingest] Updated existing: ${page.path}`);
+				} else if (file === null) {
+					try {
+						await this.app.vault.create(page.path, page.content);
+						result.pagesCreated.push(page.path);
+						console.log(`[Ingest] Created new: ${page.path}`);
+					} catch (e) {
+						console.error(`[Ingest] Create file ERROR: ${e.message}`);
+						throw e;
+					}
 				} else {
-					await this.app.vault.create(page.path, page.content);
-					result.pagesCreated.push(page.path);
-					console.log(`[Ingest] Created new: ${page.path}`);
+					console.error(`[Ingest] Path conflicts with existing folder: ${page.path}`);
+					throw new Error(`Path conflicts with existing folder: ${page.path}`);
 				}
 				await tx.recordOp(`create:${page.path}`);
 			}

@@ -1,6 +1,6 @@
 {
 	"name": "llm-wiki",
-	"version": "0.2.8",
+	"version": "0.2.9",
 	"description": "Persistent, compounding knowledge base — LLM incrementally builds and maintains a structured wiki",
 	"main": "main.js",
 	"scripts": {
@@ -27,7 +27,8 @@
 		"builtin-modules": "^4.0.0",
 		"esbuild": "^0.20.0",
 		"obsidian": "^1.12.3",
-		"typescript": "^5.4.0"
+		"typescript": "^5.4.0",
+		"vitest": "^4.1.5"
 	},
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.30.0",

@@ -21,46 +21,57 @@ export class Transaction {
 	}
 
 	static async begin(app: App, llmWikiDir: string, filePaths: string[]): Promise<Transaction> {
-		const id = crypto.randomUUID();
-		const txDir = `${llmWikiDir}/tx/${id}`;
+		try {
+			const id = crypto.randomUUID();
+			const txDir = `${llmWikiDir}/tx/${id}`;
+			console.log(`[Transaction] begin: id=${id}, llmWikiDir=${llmWikiDir}, fileCount=${filePaths.length}`);
 
-		// Ensure tx directory exists
-		const folder = app.vault.getAbstractFileByPath(llmWikiDir);
-		if (!folder) {
-			await app.vault.createFolder(llmWikiDir);
-		}
-		const txFolder = app.vault.getAbstractFileByPath(`${llmWikiDir}/tx`);
-		if (!txFolder) {
-			await app.vault.createFolder(`${llmWikiDir}/tx`);
-		}
-		await app.vault.createFolder(txDir);
-
-		// Snapshot all files
-		const files: TransactionManifest["files"] = [];
-		for (const path of filePaths) {
-			const file = app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				const content = await app.vault.read(file);
-				files.push({ path, originalContent: content });
-			} else {
-				files.push({ path, originalContent: null }); // file doesn't exist yet
+			// Ensure tx directory exists
+			const folder = app.vault.getAbstractFileByPath(llmWikiDir);
+			if (!folder) {
+				console.log(`[Transaction] Creating llmWikiDir: ${llmWikiDir}`);
+				await app.vault.createFolder(llmWikiDir);
 			}
+			const txFolder = app.vault.getAbstractFileByPath(`${llmWikiDir}/tx`);
+			if (!txFolder) {
+				console.log(`[Transaction] Creating tx folder: ${llmWikiDir}/tx`);
+				await app.vault.createFolder(`${llmWikiDir}/tx`);
+			}
+			console.log(`[Transaction] Creating txDir: ${txDir}`);
+			await app.vault.createFolder(txDir);
+
+			// Snapshot all files
+			const files: TransactionManifest["files"] = [];
+			for (const path of filePaths) {
+				const file = app.vault.getAbstractFileByPath(path);
+				if (file instanceof TFile) {
+					const content = await app.vault.read(file);
+					files.push({ path, originalContent: content });
+				} else {
+					files.push({ path, originalContent: null }); // file doesn't exist yet
+				}
+			}
+
+			const manifest: TransactionManifest = {
+				id,
+				createdAt: new Date().toISOString(),
+				files,
+				completedOps: [],
+			};
+
+			// Write manifest
+			console.log(`[Transaction] Writing manifest: ${txDir}/tx-manifest.json`);
+			await app.vault.create(
+				`${txDir}/tx-manifest.json`,
+				JSON.stringify(manifest, null, 2)
+			);
+			console.log(`[Transaction] begin SUCCESS: ${id}`);
+
+			return new Transaction(app, txDir, manifest);
+		} catch (e) {
+			console.error(`[Transaction] begin ERROR: ${e.message}`);
+			throw e;
 		}
-
-		const manifest: TransactionManifest = {
-			id,
-			createdAt: new Date().toISOString(),
-			files,
-			completedOps: [],
-		};
-
-		// Write manifest
-		await app.vault.create(
-			`${txDir}/tx-manifest.json`,
-			JSON.stringify(manifest, null, 2)
-		);
-
-		return new Transaction(app, txDir, manifest);
 	}
 
 	getId(): string {
