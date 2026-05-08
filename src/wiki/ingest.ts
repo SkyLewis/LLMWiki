@@ -278,8 +278,8 @@ export class IngestEngine {
 	}
 
 	private parseJSON<T>(text: string): T {
-		// Extract JSON from markdown code blocks if present
-		const jsonMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+		// Extract JSON from ```json code blocks only, handling newlines robustly
+		const jsonMatch = text.match(/```json\s*\n([\s\S]*?)\n\s*```/);
 		const jsonStr = jsonMatch?.[1] ?? text;
 		return JSON.parse(jsonStr.trim());
 	}
