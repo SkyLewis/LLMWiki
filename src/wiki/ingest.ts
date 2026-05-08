@@ -222,9 +222,11 @@ export class IngestEngine {
 			if (sourceFile instanceof TFile) {
 				await this.app.vault.modify(sourceFile, synthesis.source_page.content);
 				result.pagesUpdated.push(synthesis.source_page.path);
-			} else {
+			} else if (sourceFile === null) {
 				await this.app.vault.create(synthesis.source_page.path, synthesis.source_page.content);
 				result.pagesCreated.push(synthesis.source_page.path);
+			} else {
+				throw new Error(`Path conflicts with existing folder: ${synthesis.source_page.path}`);
 			}
 			await tx.recordOp(`source:${synthesis.source_page.path}`);
 
