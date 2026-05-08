@@ -213,6 +213,25 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName("Auth Method")
+			.setDesc("apiKey = X-Api-Key header; authToken = Bearer token (for MiniMax, Azure, etc.)")
+			.addDropdown((dd) =>
+				dd
+					.addOptions({ apiKey: "API Key (X-Api-Key)", authToken: "Auth Token (Bearer)" })
+					.setValue(tierConfig.authMethod ?? "apiKey")
+					.onChange(async (value: string) => {
+						if (!this.plugin.settings.modelRouter[tier]) {
+							this.plugin.settings.modelRouter[tier] = {
+								provider: "claude",
+								model: "",
+							};
+						}
+						(this.plugin.settings.modelRouter[tier] as ModelTierConfig).authMethod = value as "apiKey" | "authToken";
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
 			.setName("Model")
 			.addText((text) =>
 				text
@@ -267,6 +286,7 @@ export class LLMWikiSettingTab extends PluginSettingTab {
 						if (!this.plugin.settings.modelRouter[tier]) return;
 						const cfg = this.plugin.settings.modelRouter[tier] as ModelTierConfig;
 						const llmConfig: LLMConfig = {
+							authMethod: cfg.authMethod,
 							apiKey: cfg.apiKey || undefined,
 							baseUrl: cfg.baseUrl,
 							model: cfg.model,

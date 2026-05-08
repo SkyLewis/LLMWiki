@@ -9,8 +9,11 @@ export class ClaudeProvider extends LLMProvider {
 	constructor(config: LLMConfig) {
 		super();
 		this.config = config;
+		const auth = config.authMethod === "authToken"
+			? { authToken: config.apiKey || undefined }
+			: { apiKey: config.apiKey || undefined };
 		this.client = new Anthropic({
-			apiKey: config.apiKey || undefined,
+			...auth,
 			baseURL: config.baseUrl,
 			dangerouslyAllowBrowser: true,
 		});

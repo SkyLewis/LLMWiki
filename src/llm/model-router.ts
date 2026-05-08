@@ -40,6 +40,7 @@ export interface ModelRouterConfig {
 export interface ModelTierConfig {
 	provider: "claude" | "openai" | "ollama";
 	model: string;
+	authMethod?: "apiKey" | "authToken";
 	apiKey?: string;
 	baseUrl?: string;
 	temperature?: number;
@@ -77,6 +78,7 @@ export class ModelRouter {
 			seen.add(key);
 
 			const llmConfig: LLMConfig = {
+				authMethod: tierConfig.authMethod,
 				apiKey: tierConfig.apiKey,
 				baseUrl: tierConfig.baseUrl,
 				model: tierConfig.model,

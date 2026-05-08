@@ -32,6 +32,7 @@ export interface LLMEmbedResult {
 }
 
 export interface LLMConfig {
+	authMethod?: "apiKey" | "authToken";
 	apiKey?: string;
 	baseUrl?: string;
 	model: string;
